@@ -4,12 +4,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/supabase_service.dart';
 import 'services/signaling_service.dart';
 import 'services/pairing_service.dart';
+import 'services/webrtc_service.dart';
 import 'utils/local_storage_service.dart';
+import 'providers/connection_state.dart';
 import 'screens/home_screen.dart';
 import 'screens/device_setup_screen.dart';
 import 'screens/pairing_request_screen.dart';
 import 'screens/pairing_confirmation_screen.dart';
 import 'screens/device_list_screen.dart';
+import 'screens/webrtc_call_screen.dart';
+import 'screens/screen_share_screen.dart';
 
 const String supabaseUrl = 'YOUR_SUPABASE_URL';
 const String supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
@@ -47,6 +51,9 @@ class CooperatingScreenApp extends StatelessWidget {
         Provider<PairingService>(
           create: (_) => PairingService(),
         ),
+        ChangeNotifierProvider<ConnectionState>(
+          create: (_) => ConnectionState(),
+        ),
       ],
       child: MaterialApp(
         title: 'CooperatingScreen',
@@ -66,6 +73,14 @@ class CooperatingScreenApp extends StatelessWidget {
           '/pairing-request': (context) => const PairingRequestScreen(),
           '/pairing-confirm': (context) => const PairingConfirmationScreen(),
           '/devices': (context) => const DeviceListScreen(),
+          '/webrtc-call': (context) => const WebRTCCallScreen(
+            remoteDeviceName: 'Remote Device',
+            remoteDeviceSerial: 'SERIAL123',
+          ),
+          '/screen-share': (context) => const ScreenShareScreen(
+            remoteDeviceName: 'Remote Device',
+            remoteDeviceSerial: 'SERIAL123',
+          ),
         },
       ),
     );
