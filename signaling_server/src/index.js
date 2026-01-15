@@ -5,6 +5,7 @@ import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import pino from 'pino';
 import dotenv from 'dotenv';
+import RateLimiter from './rate_limiter.js';
 
 dotenv.config();
 
@@ -12,29 +13,60 @@ const logger = pino();
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Rate limiting configuration
+const httpLimiter = new RateLimiter({
+  windowMs: 60000, // 1 minute
+  maxRequests: 100,
+});
+
+const wsLimiter = new RateLimiter({
+  windowMs: 60000,
+  maxRequests: 30, // More strict for WebSocket connections
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(RateLimiter.middleware(httpLimiter));
 
 // Create HTTP server
 const server = createServer(app);
 
-// Create WebSocket server
-const wss = new WebSocketServer({ server });
+// Create WebSocket server with perMessageDeflate disabled for better performance
+const wss = new WebSocketServer({
+  server,
+  perMessageDeflate: false,
+  clientTracking: true,
+});
 
 // Store active connections
 const clients = new Map(); // Map<deviceSerial, WebSocket>
 const sessionMap = new Map(); // Map<sessionId, { device1, device2 }>
 
 // WebSocket connection handler
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
   const connectionId = uuidv4();
-  logger.info(`New connection: ${connectionId}`);
+  const clientIp = req.socket.remoteAddress || 'unknown';
+  
+  logger.info(`New connection: ${connectionId} from ${clientIp}`);
 
   let deviceSerial = null;
 
   ws.on('message', async (message) => {
     try {
+      // Rate limit WebSocket messages per device
+      if (deviceSerial && !wsLimiter.isAllowed(deviceSerial)) {
+        logger.warn(`Rate limit exceeded for device: ${deviceSerial}`);
+        ws.send(JSON.stringify({
+          type: 'error',
+          data: {
+            error: 'Too many messages',
+            retryAfter: wsLimiter.getResetTime(deviceSerial),
+          },
+        }));
+        return;
+      }
+
       const parsedMessage = JSON.parse(message);
       await handleSignalingMessage(ws, parsedMessage, (serial) => {
         deviceSerial = serial;

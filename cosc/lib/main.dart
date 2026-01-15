@@ -7,13 +7,14 @@ import 'services/pairing_service.dart';
 import 'services/webrtc_service.dart';
 import 'utils/local_storage_service.dart';
 import 'providers/connection_state.dart';
-import 'screens/home_screen.dart';
+import 'providers/app_settings.dart';
 import 'screens/device_setup_screen.dart';
 import 'screens/pairing_request_screen.dart';
 import 'screens/pairing_confirmation_screen.dart';
 import 'screens/device_list_screen.dart';
 import 'screens/webrtc_call_screen.dart';
 import 'screens/screen_share_screen.dart';
+import 'screens/settings_screen.dart';
 
 const String supabaseUrl = 'YOUR_SUPABASE_URL';
 const String supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
@@ -54,36 +55,57 @@ class CooperatingScreenApp extends StatelessWidget {
         ChangeNotifierProvider<ConnectionState>(
           create: (_) => ConnectionState(),
         ),
+        ChangeNotifierProvider<AppSettings>(
+          create: (_) => AppSettings(),
+        ),
       ],
-      child: MaterialApp(
-        title: 'CooperatingScreen',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          useMaterial3: true,
-        ),
-        darkTheme: ThemeData(
-          brightness: Brightness.dark,
-          useMaterial3: true,
-        ),
-        themeMode: ThemeMode.system,
-        home: const AuthWrapper(),
-        routes: {
-          '/home': (context) => const HomeScreen(),
-          '/setup': (context) => const DeviceSetupScreen(),
-          '/pairing-request': (context) => const PairingRequestScreen(),
-          '/pairing-confirm': (context) => const PairingConfirmationScreen(),
-          '/devices': (context) => const DeviceListScreen(),
-          '/webrtc-call': (context) => const WebRTCCallScreen(
-            remoteDeviceName: 'Remote Device',
-            remoteDeviceSerial: 'SERIAL123',
-          ),
-          '/screen-share': (context) => const ScreenShareScreen(
-            remoteDeviceName: 'Remote Device',
-            remoteDeviceSerial: 'SERIAL123',
-          ),
+      child: Consumer<AppSettings>(
+        builder: (context, settings, _) {
+          return MaterialApp(
+            title: 'CooperatingScreen',
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+              useMaterial3: true,
+              brightness: Brightness.light,
+            ),
+            darkTheme: ThemeData(
+              primarySwatch: Colors.blue,
+              useMaterial3: true,
+              brightness: Brightness.dark,
+            ),
+            themeMode: _getThemeModeFromSettings(settings.themeMode),
+            home: const AuthWrapper(),
+            routes: {
+              '/home': (context) => const HomeScreen(),
+              '/setup': (context) => const DeviceSetupScreen(),
+              '/pairing-request': (context) => const PairingRequestScreen(),
+              '/pairing-confirm': (context) => const PairingConfirmationScreen(),
+              '/devices': (context) => const DeviceListScreen(),
+              '/webrtc-call': (context) => const WebRTCCallScreen(
+                remoteDeviceName: 'Remote Device',
+                remoteDeviceSerial: 'SERIAL123',
+              ),
+              '/screen-share': (context) => const ScreenShareScreen(
+                remoteDeviceName: 'Remote Device',
+                remoteDeviceSerial: 'SERIAL123',
+              ),
+              '/settings': (context) => const SettingsScreen(),
+            },
+          );
         },
       ),
     );
+  }
+
+  ThemeMode _getThemeModeFromSettings(ThemeMode settingsMode) {
+    switch (settingsMode) {
+      case ThemeMode.light:
+        return ThemeMode.light;
+      case ThemeMode.dark:
+        return ThemeMode.dark;
+      case ThemeMode.system:
+        return ThemeMode.system;
+    }
   }
 }
 
