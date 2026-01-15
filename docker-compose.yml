@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  signaling-server:
+    build:
+      context: ./signaling_server
+      dockerfile: Dockerfile
+    container_name: cosc-signaling-server
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      LOG_LEVEL: info
+    restart: unless-stopped
+    volumes:
+      - ./signaling_server/src:/app/src
+    networks:
+      - cosc-network
+
+networks:
+  cosc-network:
+    driver: bridge
